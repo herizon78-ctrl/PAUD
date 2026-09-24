@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Petualangan Seru Mengenal Tanaman - MPI PAUD</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Fredoka & Quicksand untuk tampilan ramah anak -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Fredoka', 'Quicksand', sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #f0fdf4 50%, #fef3c7 100%);
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Custom Soft Animations */
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(2deg); }
+        }
+
+        @keyframes pulseSoft {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes plantGrow {
+            0% { transform: scale(0.3) translateY(40px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        .animate-float {
+            animation: floatSlow 3.5s ease-in-out infinite;
+        }
+
+        .animate-pulse-soft {
+            animation: pulseSoft 2s ease-in-out infinite;
+        }
+
+        .animate-grow {
+            animation: plantGrow 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* PAUD Touch Friendly Buttons (Min 44px) */
+        .btn-kid {
+            min-height: 48px;
+            min-width: 48px;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 6px 0 rgba(0,0,0,0.15);
+        }
+
+        .btn-kid:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.15);
+        }
+
+        /* Card Soft Hover & Touch */
+        .card-interactive {
+            transition: all 0.25s ease;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+        }
+
+        .card-interactive:active {
+            transform: scale(0.97);
+        }
+
+        /* Custom Scrollbar for PAUD UI */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #86efac;
+            border-radius: 10px;
+        }
+
+        /* Canvas Overlay for Confetti */
+        #confettiCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between overflow-x-hidden">
+
+    <canvas id="confettiCanvas"></canvas>
+
+    <!-- Top Bar Navigation & Info -->
+    <header id="top-bar" class="hidden sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b-4 border-green-300 px-4 py-2 shadow-sm">
+        <div class="max-w-5xl mx-auto flex items-center justify-between">
+            <!-- Left: Mascot Status -->
+            <div class="flex items-center gap-2">
+                <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-2xl border-2 border-green-400 animate-float">
+                    🌱
+                </div>
+                <div>
+                    <span id="bar-student-name" class="font-bold text-green-800 text-sm md:text-base block">Teman Kecil</span>
+                    <span id="bar-student-class" class="text-xs text-green-600 block -mt-1">PAUD</span>
+                </div>
+            </div>
+
+            <!-- Center: Score Badge -->
+            <div class="flex items-center bg-amber-100 border-2 border-amber-400 px-3 py-1 rounded-full shadow-inner">
+                <span class="text-xl mr-1">⭐</span>
+                <span class="text-sm font-bold text-amber-900">Poin: <span id="current-score" class="text-lg">0</span></span>
+            </div>
+
+            <!-- Right: Controls & Home -->
+            <div class="flex items-center gap-2">
+                <button id="btn-audio-toggle" onclick="toggleAudio()" class="btn-kid bg-yellow-200 hover:bg-yellow-300 text-yellow-800 border-2 border-yellow-400 p-2 rounded-2xl flex items-center justify-center text-xl" title="Suara">
+                    🔊
+                </button>
+                <button onclick="goToPage('page-menu')" class="btn-kid bg-green-500 hover:bg-green-600 text-white border-2 border-green-600 px-3 py-1.5 rounded-2xl font-bold flex items-center gap-1 text-sm md:text-base">
+                    🏠 <span class="hidden sm:inline">Beranda</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN APP CONTAINER -->
+    <main class="flex-grow flex items-center justify-center p-3 sm:p-6 max-w-5xl mx-auto w-full">
+
+        <!-- 1. HALAMAN PEMBUKA -->
+        <section id="page-welcome" class="page-container w-full bg-white/80 backdrop-blur-md rounded-3xl p-6 md:p-10 border-4 border-green-300 text-center shadow-xl animate-grow">
+            <div class="inline-block p-4 bg-green-100 rounded-full mb-4 border-4 border-green-400 animate-float">
+                <svg class="w-24 h-24 sm:w-32 sm:h-32 mx-auto" viewBox="0 0 100 100">
+                    <!-- Plant SVG Illustration -->
+                    <path d="M50 85 L50 40" stroke="#854d0e" stroke-width="6" stroke-linecap="round"/>
+                    <path d="M50 65 Q30 50 20 60 Q30 75 50 65" fill="#4ade80" stroke="#16a34a" stroke-width="2"/>
+                    <path d="M50 55 Q70 40 80 50 Q70 65 50 55" fill="#22c55e" stroke="#15803d" stroke-width="2"/>
+                    <circle cx="50" cy="35" r="14" fill="#facc15" stroke="#ca8a04" stroke-width="2"/>
+                    <!-- Flower petals -->
+                    <circle cx="50" cy="15" r="8" fill="#f43f5e"/>
+                    <circle cx="50" cy="55" r="8" fill="#f43f5e"/>
+                    <circle cx="30" cy="35" r="8" fill="#f43f5e"/>
+                    <circle cx="70" cy="35" r="8" fill="#f43f5e"/>
+                    <circle cx="36" cy="21" r="8" fill="#fb7185"/>
+                    <circle cx="64" cy="21" r="8" fill="#fb7185"/>
+                    <circle cx="36" cy="49" r="8" fill="#fb7185"/>
+                    <circle cx="64" cy="49" r="8" fill="#fb7185"/>
+                    <circle cx="50" cy="35" r="10" fill="#fef08a"/>
+                </svg>
+            </div>
+
+            <h1 class="text-2xl sm:text-4xl font-extrabold text-green-700 mb-2 leading-tight">
+                PETUALANGAN SERU<br><span class="text-amber-500">MENGENAL TANAMAN</span> 🌱
+            </h1>
+            
+            <p class="text-slate-600 text-base sm:text-lg mb-6 font-semibold">
+                Yuk belajar mengenal tanaman sambil bermain bersama Si Kecambah!
+            </p>
+
+            <div class="flex justify-center gap-4 text-3xl sm:text-4xl mb-8">
+                <span class="p-2 bg-rose-100 rounded-2xl border-2 border-rose-300">🌻</span>
+                <span class="p-2 bg-emerald-100 rounded-2xl border-2 border-emerald-300">🌳</span>
+                <span class="p-2 bg-red-100 rounded-2xl border-2 border-red-300">🍎</span>
+                <span class="p-2 bg-green-100 rounded-2xl border-2 border-green-300">🌿</span>
+            </div>
+
+            <button onclick="goToPage('page-login')" class="btn-kid bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold text-lg sm:text-2xl px-8 py-4 rounded-3xl border-4 border-green-700 shadow-lg w-full sm:w-auto inline-flex items-center justify-center gap-3">
+                🚀 MULAI PETUALANGAN
+            </button>
+        </section>
+
+        <!-- 2. LOGIN PESERTA DIDIK -->
+        <section id="page-login" class="page-container hidden w-full bg-white/90 backdrop-blur-md rounded-3xl p-6 md:p-8 border-4 border-amber-300 shadow-xl max-w-md mx-auto">
+            <div class="text-center mb-6">
+                <div class="text-5xl mb-2">🧑‍🌾</div>
+                <h2 class="text-2xl font-bold text-amber-800">Siapa Namamu?</h2>
+                <p class="text-xs text-slate-500">Minta bantuan Ibu/Bapak Guru atau Orang Tua untuk mengisi ya!</p>
+            </div>
+
+            <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Nama Lengkap / Panggilan:</label>
+                    <input type="text" id="input-nama" required placeholder="Contoh: Budi" class="w-full px-4 py-3 rounded-2xl border-2 border-amber-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none font-bold text-slate-800 text-lg">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Kelompok / Kelas:</label>
+                    <select id="input-kelas" required class="w-full px-4 py-3 rounded-2xl border-2 border-amber-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none font-bold text-slate-800 text-lg bg-white">
+                        <option value="">-- Pilih Kelompok --</option>
+                        <option value="PAUD A">PAUD / TK A</option>
+                        <option value="PAUD B">PAUD / TK B</option>
+                        <option value="KB / TPA">Kelompok Bermain (KB)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Nama Guru / Pendamping:</label>
+                    <input type="text" id="input-guru" placeholder="Contoh: Ibu Ani" class="w-full px-4 py-3 rounded-2xl border-2 border-amber-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none font-bold text-slate-800 text-lg">
+                </div>
+
+                <button type="submit" class="btn-kid w-full mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xl py-3 rounded-2xl border-2 border-amber-700 shadow-md">
+                    🌟 MULAI BELAJAR
+                </button>
+            </form>
+        </section>
+
+        <!-- 3. MENU UTAMA -->
+        <section id="page-menu" class="page-container hidden w-full space-y-6">
+            <!-- Speech Bubble Mascot Header -->
+            <div class="bg-white/90 backdrop-blur-md rounded-3xl p-4 sm:p-6 border-4 border-green-300 shadow-md flex items-center gap-4">
+                <div class="text-4xl sm:text-5xl bg-green-100 p-3 rounded-2xl border-2 border-green-400 animate-float">🌱</div>
+                <div>
+                    <p class="text-xs sm:text-sm font-bold text-green-600 uppercase tracking-wider">Si Kecambah Berkata:</p>
+                    <p class="text-base sm:text-xl font-bold text-slate-800">
+                        "Halo <span id="menu-student-greeting" class="text-green-600">Teman</span>! Pilih petualangan yang kamu sukai di bawah ini!"
+                    </p>
+                </div>
+            </div>
+
+            <!-- Menu Cards Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div onclick="goToPage('page-materi-1')" class="card-interactive bg-emerald-50 hover:bg-emerald-100 border-4 border-emerald-300 p-5 rounded-3xl cursor-pointer flex items-center gap-4">
+                    <div class="text-4xl sm:text-5xl p-3 bg-emerald-200 rounded-2xl">🌱</div>
+                    <div>
+                        <h3 class="font-bold text-emerald-900 text-lg">1. Kenalan Tanaman</h3>
+                        <p class="text-xs text-emerald-700">Mengenal berbagai tanaman disekitarmu</p>
+                    </div>
+                </div>
+
+                <div onclick="goToPage('page-materi-2')" class="card-interactive bg-lime-50 hover:bg-lime-100 border-4 border-lime-300 p-5 rounded-3xl cursor-pointer flex items-center gap-4">
+                    <div class="text-4xl sm:text-5xl p-3 bg-lime-200 rounded-2xl">🌿</div>
+                    <div>
+                        <h3 class="font-bold text-lime-900 text-lg">2. Bagian Tanaman</h3>
+                        <p class="text-xs text-lime-700">Akar, batang, daun, bunga & buah</p>
+                    </div>
+                </div>
+
+                <div onclick="goToPage('page-materi-3')" class="card-interactive bg-sky-50 hover:bg-sky-100 border-4 border-sky-300 p-5 rounded-3xl cursor-pointer flex items-center gap-4">
+                    <div class="text-4xl sm:text-5xl p-3 bg-sky-200 rounded-2xl">💧</div>
+                    <div>
+                        <h3 class="font-bold text-sky-900 text-lg">3. Kebutuhan Tanaman</h3>
+                        <p class="text-xs text-sky-700">Air, matahari, tanah & udara</p>
+                    </div>
+                </div>
+
+                <div onclick="goToPage('page-materi-4')" class="card-interactive bg-amber-50 hover:bg-amber-100 border-4 border-amber-300 p-5 rounded-3xl cursor-pointer flex items-center gap-4">
+                    <div class="text-4xl sm:text-5xl p-3 bg-amber-200 rounded-2xl">🌻</div>
+                    <div>
+                        <h3 class="font-bold text-amber-900 text-lg">4. Jenis Tanaman</h3>
+                        <p class="text-xs text-amber-700">Bunga, buah, sayur & pohon</p>
+                    </div>
+                </div>
+
+                <div onclick="goToPage('page-akt-care')" class="card-interactive bg-rose-50 hover:bg-rose-100 border-4 border-rose-300 p-5 rounded-3xl cursor-pointer flex items-center gap-4">
+                    <div class="text-4xl sm:text-5xl p-3 bg-rose-200 rounded-2xl">🪴</div>
+                    <div>
+                        <h3 class="font-bold text-rose-900 text-lg">5. Merawat Tanaman</h3>
+                        <p class="text-xs text-rose-700">Aktivitas menyiram & merawat</p>
+                    </div>
+                </div>
+
+                <div onclick="goToPage('page-game')" class="card-interactive bg-purple-50 hover:bg-purple-100 border-4 border-purple-300 p-5 rounded-3xl cursor-pointer flex items-center gap-4">
+                    <div class="text-4xl sm:text-5xl p-3 bg-purple-200 rounded-2xl">🎮</div>
+                    <div>
+                        <h3 class="font-bold text-purple-900 text-lg">6. Permainan Edukatif</h3>
+                        <p class="text-xs text-purple-700">Tantangan Selamatkan Tanaman!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Menu Actions -->
+            <div class="flex flex-wrap gap-3 justify-between items-center pt-2">
+                <button onclick="goToPage('page-result')" class="btn-kid bg-yellow-400 hover:bg-yellow-500 text-yellow-950 font-bold px-6 py-3 rounded-2xl border-2 border-yellow-600 flex items-center gap-2">
+                    🏆 Hasil Belajarku
+                </button>
+
+                <button onclick="goToPage('page-dashboard')" class="btn-kid bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2 rounded-2xl border-2 border-slate-400 text-sm flex items-center gap-2">
+                    👨‍🏫 Mode Guru / Dashboard
+                </button>
+            </div>
+        </section>
+
+        <!-- 4. MATERI 1 - KENALAN DENGAN TANAMAN -->
+        <section id="page-materi-1" class="page-container hidden w-full bg-white/90 backdrop-blur-md rounded-3xl p-6 border-4 border-green-300 shadow-xl space-y-6">
+            <div class="flex items-center justify-between border-b-2 border-green-100 pb-3">
+                <h2 class="text-xl sm:text-2xl font-bold text-green-800 flex items-center gap-2">
+                    <span>🌻</span> 1. Kenalan dengan Tanaman
+                </h2>
+                <span class="text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full font-bold">Sentuh gambar!</span>
+            </div>
+
+            <p class="text-sm sm:text-base text-slate-600 font-semibold">Tekan salah satu gambar tanaman di bawah ini untuk mendengarkan kisahnya!</p>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <!-- Interactive Plants -->
+                <button onclick="showPlantInfo('bunga')" class="btn-kid p-4 bg-pink-50 hover:bg-pink-100 border-4 border-pink-300 rounded-3xl text-center space-y-2">
+                    <div class="text-5xl">🌻</div>
+                    <div class="font-bold text-pink-900">Bunga Mawar</div>
+                </button>
+
+                <button onclick="showPlantInfo('pohon')" class="btn-kid p-4 bg-emerald-50 hover:bg-emerald-100 border-4 border-emerald-300 rounded-3xl text-center space-y-2">
+                    <div class="text-5xl">🌳</div>
+                    <div class="font-bold text-emerald-900">Pohon Besar</div>
+                </button>
+
+                <button onclick="showPlantInfo('kecambah')" class="btn-kid p-4 bg-green-50 hover:bg-green-100 border-4 border-green-300 rounded-3xl text-center space-y-2">
+                    <div class="text-5xl">🌱</div>
+                    <div class="font-bold text-green-900">Kecambah Kecil</div>
+                </button>
+
+                <button onclick="showPlantInfo('sayur')" class="btn-kid p-4 bg-orange-50 hover:bg-orange-100 border-4 border-orange-300 rounded-3xl text-center space-y-2">
+                    <div class="text-5xl">🥕</div>
+                    <div class="font-bold text-orange-900">Wortel Lezat</div>
+                </button>
+
+                <button onclick="showPlantInfo('buah')" class="btn-kid p-4 bg-red-50 hover:bg-red-100 border-4 border-red-300 rounded-3xl text-center space-y-2">
+                    <div class="text-5xl">🍅</div>
+                    <div class="font-bold text-red-900">Tomat Segar</div>
+                </button>
+
+                <button onclick="showPlantInfo('padi')" class="btn-kid p-4 bg-amber-50 hover:bg-amber-100 border-4 border-amber-300 rounded-3xl text-center space-y-2">
+                    <div class="text-5xl">🌾</div>
+                    <div class="font-bold text-amber-900">Tanaman Padi</div>
+                </button>
+            </div>
+
+            <!-- Pop-up info display -->
+            <div id="materi-1-popup" class="bg-amber-50 border-4 border-amber-300 p-4 rounded-2xl flex items-center gap-4">
+                <div id="materi-1-icon" class="text-4xl">🌱</div>
+                <div>
+                    <h4 id="materi-1-title" class="font-bold text-amber-900 text-lg">Sentuh gambar di atas</h4>
+                    <p id="materi-1-desc" class="text-sm text-slate-700">Pilih salah satu tanaman untuk berkenalan!</p>
+                </div>
+            </div>
+
+            <div class="flex justify-between pt-4 border-t-2 border-slate-100">
+                <button onclick="goToPage('page-menu')" class="btn-kid bg-slate-200 text-slate-700 font-bold px-5 py-2 rounded-2xl">⬅️ Kembali</button>
+                <button onclick="goToPage('page-materi-2')" class="btn-kid bg-green-500 text-white font-bold px-6 py-2 rounded-2xl">Lanjut ➡️</button>
+            </div>
+        </section>
+
+        <!-- 5. MATERI 2 - BAGIAN TANAMAN -->
+        <section id="page-materi-2" class="page-container hidden w-full bg-white/90 backdrop-blur-md rounded-3xl p-6 border-4 border-lime-300 shadow-xl space-y-6">
+            <div class="flex items-center justify-between border-b-2 border-lime-100 pb-3">
+                <h2 class="text-xl sm:text-2xl font-bold text-lime-800 flex items-center gap-2">
+                    <span>🌿</span> 2. Bagian-Bagian Tanaman
+                </h2>
+                <span class="text-xs bg-lime-100 text-lime-800 px-3 py-1 rounded-full font-bold">Tekan tombol lingkaran!</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                <!-- SVG Interactive Plant Diagram -->
+                <div class="relative bg-gradient-to-b from-sky-100 via-emerald-50 to-amber-100 rounded-3xl p-4 border-4 border-green-200 flex justify-center">
+                    <svg class="w-64 h-80" viewBox="0 0 200 260">
+                        <!-- Sky & Soil Boundary -->
+                        <rect x="0" y="200" width="200" height="60" fill="#78350f" opacity="0.2" rx="10"/>
+                        <text x="10" y="220" font-size="10" fill="#78350f" font-weight="bold">TANAH</text>
+
+                        <!-- Roots (Akar) -->
+                        <path d="M100 200 Q80 220 60 250 M100 200 Q100 230 105 255 M100 200 Q120 220 140 245" stroke="#78350f" stroke-width="4" stroke-linecap="round" fill="none"/>
+
+                        <!-- Stem (Batang) -->
+                        <path d="M100 200 L100 80" stroke="#15803d" stroke-width="8" stroke-linecap="round"/>
+
+                        <!-- Leaves (Daun) -->
+                        <path d="M100 150 Q60 130 50 145 Q70 165 100 150" fill="#22c55e" stroke="#15803d" stroke-width="2"/>
+                        <path d="M100 120 Q140 100 150 115 Q130 135 100 120" fill="#4ade80" stroke="#15803d" stroke-width="2"/>
+
+                        <!-- Fruit (Buah) -->
+                        <circle cx="125" cy="100" r="12" fill="#ef4444" stroke="#b91c1c" stroke-width="2"/>
+                        <path d="M125 88 L125 84" stroke="#15803d" stroke-width="2"/>
+
+                        <!-- Flower (Bunga) -->
+                        <circle cx="100" cy="65" r="12" fill="#facc15"/>
+                        <circle cx="100" cy="45" r="8" fill="#f43f5e"/>
+                        <circle cx="100" cy="85" r="8" fill="#f43f5e"/>
+                        <circle cx="80" cy="65" r="8" fill="#f43f5e"/>
+                        <circle cx="120" cy="65" r="8" fill="#f43f5e"/>
+
+                        <!-- Seed (Biji) in fruit -->
+                        <ellipse cx="125" cy="100" rx="3" ry="5" fill="#fef08a"/>
+                    </svg>
+
+                    <!-- Interactive Clickable Hotspot Buttons -->
+                    <button onclick="showPartModal('bunga')" class="btn-kid absolute top-6 left-1/2 -translate-x-1/2 bg-rose-500 text-white text-xs font-bold px-3 py-1 rounded-full border-2 border-white shadow-md animate-bounce">🌸 Bunga</button>
+
+                    <button onclick="showPartModal('buah')" class="btn-kid absolute top-24 right-6 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full border-2 border-white shadow-md">🍎 Buah & Biji</button>
+
+                    <button onclick="showPartModal('daun')" class="btn-kid absolute top-32 left-4 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full border-2 border-white shadow-md">🍃 Daun</button>
+
+                    <button onclick="showPartModal('batang')" class="btn-kid absolute top-48 right-10 bg-emerald-700 text-white text-xs font-bold px-3 py-1 rounded-full border-2 border-white shadow-md">🪵 Batang</button>
+
+                    <button onclick="showPartModal('akar')" class="btn-kid absolute bottom-4 left-1/2 -translate-x-1/2 bg-amber-800 text-white text-xs font-bold px-3 py-1 rounded-full border-2 border-white shadow-md">🥕 Akar</button>
+                </div>
+
+                <!-- Explanation Box -->
+                <div class="space-y-4">
+                    <div class="bg-lime-50 border-4 border-lime-300 p-5 rounded-3xl">
+                        <h3 id="part-title" class="font-bold text-lime-900 text-xl mb-2 flex items-center gap-2">
+                            <span>🔍</span> Sentuh Tombol Bagian Tanaman!
+                        </h3>
+                        <p id="part-desc" class="text-slate-700 text-base leading-relaxed">
+                            Tanaman memiliki bagian-bagian penting seperti Akar, Batang, Daun, Bunga, Buah, dan Biji. Tekan tombol lingkaran pada gambar untuk melihat penjelasan lengkapnya!
+                        </p>
+                    </div>
+
+                    <div class="p-4 bg-amber-50 rounded-2xl border-2 border-amber-200 flex items-center gap-3">
+                        <span class="text-3xl">💡</span>
+                        <p class="text-xs text-amber-900 font-medium">Tahukah kamu? Setiap bagian tanaman saling bekerja sama agar tanaman tumbuh tinggi dan sehat!</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-between pt-4 border-t-2 border-slate-100">
+                <button onclick="goToPage('page-materi-1')" class="btn-kid bg-slate-200 text-slate-700 font-bold px-5 py-2 rounded-2xl">⬅️ Kembali</button>
+                <button onclick="goToPage('page-materi-3')" class="btn-kid bg-lime-600 text-white font-bold px-6 py-2 rounded-2xl">Lanjut ➡️</button>
+            </div>
+        </section>
+
+        <!-- 6. MATERI 3 - KEBUTUHAN TANAMAN -->
+        <section id="page-materi-3" class="page-container hidden w-full bg-white/90 backdrop-blur-md rounded-3xl p-6 border-4 border-sky-300 shadow-xl space-y-6">
+            <div class="flex items-center justify-between border-b-2 border-sky-100 pb-3">
+                <h2 class="text-xl sm:text-2xl font-bold text-sky-800 flex items-center gap-2">
+                    <span>💧</span> 3. Kebutuhan Dasar Tanaman
+                </h2>
+                <span class="text-xs bg-sky-100 text-sky-800 px-3 py-1 rounded-full font-bold">Pilih benda yang tepat!</span>
+            </div>
+
+            <div class="text-center space-y-2">
+                <p class="text-base text-slate-700 font-bold">Aduh, tanaman ini terlihat layu dan haus! 🥺</p>
+                <p class="text-xs text-slate-500">Bantu pilih benda yang dibutuhkan tanaman agar tumbuh segar kembali!</p>
+            </div>
+
+            <!-- Plant State Visualization -->
+            <div class="flex justify-center my-4">
+                <div class="p-6 bg-sky-50 rounded-3xl border-4 border-sky-200 text-center w-full max-w-xs">
+                    <div id="plant-need-status" class="text-7xl mb-2 transition-all duration-500">🥀</div>
+                    <div id="plant-need-label" class="font-bold text-slate-600 text-sm">Tanaman Layu</div>
+                </div>
+            </div>
+
+            <!-- Selectable Options -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <button onclick="checkPlantNeed('air', true)" class="btn-kid p-3 bg-blue-100 hover:bg-blue-200 border-2 border-blue-400 rounded-2xl flex items-center justify-center gap-2">
+                    <span class="text-3xl">💧</span>
+                    <span class="font-bold text-blue-900">Air</span>
+                </button>
+
+                <button onclick="checkPlantNeed('matahari', true)" class="btn-kid p-3 bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 rounded-2xl flex items-center justify-center gap-2">
+                    <span class="text-3xl">☀️</span>
+                    <span class="font-bold text-amber-900">Matahari</span>
+                </button>
+
+                <button onclick="checkPlantNeed('tanah', true)" class="btn-kid p-3 bg-amber-200 hover:bg-amber-300 border-2 border-amber-600 rounded-2xl flex items-center justify-center gap-2">
+                    <span class="text-3xl">🌱</span>
+                    <span class="font-bold text-amber-950">Tanah</span>
+                </button>
+
+                <button onclick="checkPlantNeed('udara', true)" class="btn-kid p-3 bg-sky-100 hover:bg-sky-200 border-2 border-sky-400 rounded-2xl flex items-center justify-center gap-2">
+                    <span class="text-3xl">💨</span>
+                    <span class="font-bold text-sky-900">Udara</span>
+                </button>
+
+                <button onclick="checkPlantNeed('boneka', false)" class="btn-kid p-3 bg-pink-100 hover:bg-pink-200 border-2 border-pink-400 rounded-2xl flex items-center justify-center gap-2">
+                    <span class="text-3xl">🧸</span>
+                    <span class="font-bold text-pink-900">Boneka</span>
+                </button>
+
+                <button onclick="checkPlantNeed('bola', false)" class="btn-kid p-3 bg-purple-100 hover:bg-purple-200 border-2 border-purple-400 rounded-2xl flex items-center justify-center gap-2">
+                    <span class="text-3xl">⚽</span>
+                    <span class="font-bold text-purple-900">Bola</span>
+                </button>
+            </div>
+
+            <div class="flex justify-between pt-4 border-t-2 border-slate-100">
+                <button onclick="goToPage('page-materi-2')" class="btn-kid bg-slate-200 text-slate-700 font-bold px-5 py-2 rounded-2xl">⬅️ Kembali</button>
+                <button onclick="goToPage('page-materi-4')" class="btn-kid bg-sky-600 text-white font-bold px-6 py-2 rounded-2xl">Lanjut ➡️</button>
+            </div>
+        </section>
+
+        <!-- 7. MATERI 4 - JENIS TANAMAN -->
+        <section id="page-materi-4" class="page-container hidden w-full bg-white/90 backdrop-blur-md rounded-3xl p-6 border-4 border-amber-300 shadow-xl space-y-6">
+            <div class="flex items-center justify-between border-b-2 border-amber-100 pb-3">
+                <h2 class="text-xl sm:text-2xl font-bold text-amber-800 flex items-center gap-2">
+                    <span>🌻</span> 4. Jenis-Jenis Tanaman
+                </h2>
+                <span class="text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-bold">Tekan kartu!</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button onclick="showTypeDetail('bunga')" class="card-interactive btn-kid p-5 bg-rose-50 border-4 border-rose-300 rounded-3xl text-left flex items-center gap-4">
+                    <div class="text-5xl p-3 bg-rose-200 rounded-2xl">🌻</div>
+                    <div>
+                        <h3 class="font-bold text-rose-900 text-lg">Tanaman Bunga</h3>
+                        <p class="text-xs text-rose-700">Memiliki warna cantik & bau harum.</p>
+                    </div>
+                </button>
+
+                <button onclick="showTypeDetail('buah')" class="card-interactive btn-kid p-5 bg-orange-50 border-4 border-orange-300 rounded-3xl text-left flex items-center gap-4">
+                    <div class="text-5xl p-3 bg-orange-200 rounded-2xl">🍎</div>
+                    <div>
+                        <h3 class="font-bold text-orange-900 text-lg">Tanaman Buah</h3>
+                        <p class="text-xs text-orange-700">Menghasilkan buah manis & manis.</p>
+                    </div>
+                </button>
+
+                <button onclick="showTypeDetail('sayur')" class="card-interactive btn-kid p-5 bg-emerald-50 border-4 border-emerald-300 rounded-3xl text-left flex items-center gap-4">
+                    <div class="text-5xl p-3 bg-emerald-200 rounded-2xl">🥬</div>
+                    <div>
+                        <h3 class="font-bold text-emerald-900 text-lg">Tanaman Sayur</h3>
+                        <p class="text-xs text-emerald-700">Sehat & kaya nutrisi untuk tubuh.</p>
+                    </div>
+                </button>
+
+                <button onclick="showTypeDetail('pohon')" class="card-interactive btn-kid p-5 bg-green-50 border-4 border-green-300 rounded-3xl text-left flex items-center gap-4">
+                    <div class="text-5xl p-3 bg-green-200 rounded-2xl">🌳</div>
+                    <div>
+                        <h3 class="font-bold text-green-900 text-lg">Pohon Rindang</h3>
+                        <p class="text-xs text-green-700">Tinggi, kokoh, dan peneduh udara.</p>
+                    </div>
+                </button>
+            </div>
+
+            <div id="type-detail-box" class="bg-amber-50 border-4 border-amber-300 p-4 rounded-2xl text-center">
+                <p class="text-sm font-bold text-amber-900">Sentuh salah satu jenis tanaman di atas untuk mengenal contohnya!</p>
+            </div>
+
+            <div class="flex justify-between pt-4 border-t-2 border-slate-100">
+                <button onclick="goToPage('page-materi-3')" class="btn-kid bg-slate-200 text-slate-700 font-bold px-5 py-2 rounded-2xl">⬅️ Kembali</button>
+                <button onclick="goToPage('page-akt-care')" class="btn-kid bg-amber-500 text-white font-bold px-6 py-2 rounded-2xl">Lanjut ➡️</button>
+            </div>
+        </section>
+
+        <!-- 8. AKTIVITAS 5 - YUK MERAWAT TANAMAN -->
+        <section id="page-akt-care" class="page-container hidden w-full bg-white/90 backdrop-blur-md rounded-3xl p-6 border-4 border-rose-300 shadow-xl space-y-6">
+            <div class="flex items-center justify-between border-b-2 border-rose-100 pb-3">
+                <h2 class="text-xl sm:text-2xl font-bold text-rose-800 flex items-center gap-2">
+                    <span>🪴</span> Yuk Merawat Tanaman!
+                </h2>
+                <span class="text-xs bg-rose-100 text-rose-800 px-3 py-1 rounded-full font-bold">Simulasi Interaktif</span>
+            </div>
+
+            <div class="text-center space-y-2">
+                <p class="text-base text-slate-700 font-bold">Pilih alat yang tepat untuk merawat tanaman ini!</p>
+            </div>
+
+            <div class="flex flex-col items-center justify-center bg-emerald-50 rounded-3xl p-6 border-4 border-emerald-200 my-2">
+                <div id="care-plant-visual" class="text-8xl transition-transform duration-500 mb-2">🥀</div>
+                <div id="care-plant-status" class="font-bold text-slate-700 text-base">Tanaman sedang layu...</div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <button onclick="applyCareTool('water')" class="btn-kid p-3 bg-blue-100 hover:bg-blue-200 border-2 border-blue-400 rounded-2xl text-center">
+                    <div class="text-4xl">💧</div>
+                    <div class="font-bold text-blue-900 text-sm">Menyiram Air</div>
+                </button>
+
+                <button onclick="applyCareTool('sun')" class="btn-kid p-3 bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 rounded-2xl text-center">
+                    <div class="text-4xl">☀️</div>
+                    <div class="font-bold text-amber-900 text-sm">Beri Cahaya</div>
+                </button>
+
+                <button onclick="applyCareTool('soil')" class="btn-kid p-3 bg-amber-200 hover:bg-amber-300 border-2 border-amber-600 rounded-2xl text-center">
+                    <div class="text-4xl">🪴</div>
+                    <div class="font-bold text-amber-950 text-sm">Beri Pupuk</div>
+                </button>
+
+                <button onclick="applyCareTool('toy')" class="btn-kid p-3 bg-pink-100 hover:bg-pink-200 border-2 border-pink-400 rounded-2xl text-center">
+                    <div class="text-4xl">🧸</div>
+                    <div class="font-bold text-pink-900 text-sm">Beri Boneka</div>
+                </button>
+            </div>
+
+            <div class="flex justify-between pt-4 border-t-2 border-slate-100">
+                <button onclick="goToPage('page-materi-4')" class="btn-kid bg-slate-200 text-slate-700 font-bold px-5 py-2 rounded-2xl">⬅️ Kembali</button>
+                <button onclick="goToPage('page-game')" class="btn-kid bg-rose-500 text-white font-bold px-6 py-2 rounded-2xl">Main Game ➡️</button>
+            </div>
+        </section>
+
+        <!-- 9. PERMAINAN EDUKATIF HUB -->
+        <section id="page-game" class="page-container hidden w-full bg-white/90 backdrop-blur-md rounded-3xl p-6 border-4 border-purple-300 shadow-xl space-y-6">
+            <div class="flex items-center justify-between border-b-2 border-purple-100 pb-3">
+                <h2 class="text-xl sm:text-2xl font-bold text-purple-800 flex items-center gap-2">
+                    <span>🎮</span> Game Edukatif: "Selamatkan Tanaman"
+                </h2>
+                <span class="text-xs bg-purple-100 text-purple-800 px-3 py-1 rounded-full font-bold">5 Misi Seru</span>
+            </div>
+
+            <!-- Game Progress Tracker -->
+            <div class="bg-purple-50 p-4 rounded-2xl border-2 border-purple-200 flex items-center justify-between">
+                <div>
+                    <span class="text-xs text-purple-700 font-bold block">STATUS MISI:</span>
+                    <span id="game-mission-title" class="font-bold text-purple-900 text-base">Misi 1 dari 5: Cari Bagian Daun!</span>
+                </div>
+                <div class="bg-purple-200 text-purple-900 font-extrabold px-3 py-1 rounded-full text-sm">
+                    ⭐ +<span id="game-score-reward">10</span> Poin
+                </div>
+            </div>
+
+            <!-- Active Mini Game Container -->
+            <div id="game-stage-container" class="bg-slate-50 p-6 rounded-3xl border-4 border-purple-200 space-y-4">
+                <!-- Dynamic Content injected via JS -->
+            </div>
+
+            <div class="flex justify-between pt-4 border-t-2 border-slate-100">
+                <button onclick="goToPage('page-menu')" class="btn-kid bg-slate-200 text-slate-700 font-bold px-5 py-2 rounded-2xl">🏠 Menu Utama</button>
+                <button id="btn-next-mission" onclick="nextGameMission()" class="btn-kid bg-purple-600 text-white font-bold px-6 py-2 rounded-2xl">Misi Selanjutnya ➡️</button>
+            </div>
+        </section>
+
+        <!-- 10. HASIL BELAJARKU -->
+        <section id="page-result" class="page-container hidden w-full bg-white/95 backdrop-blur-md rounded-3xl p-6 sm:p-8 border-4 border-yellow-400 shadow-2xl text-center space-y-6">
+            <div class="inline-block p-4 bg-yellow-100 rounded-full border-4 border-yellow-400 animate-bounce">
+                <span class="text-6xl sm:text-7xl">🏆</span>
+            </div>
+
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-amber-800">🌟 HASIL BELAJARKU 🌟</h2>
+
+            <div class="bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 border-4 border-amber-300 rounded-3xl p-6 text-left max-w-md mx-auto space-y-3 shadow-inner">
+                <div class="flex justify-between border-b pb-2 border-amber-200">
+                    <span class="text-slate-600 font-bold text-sm">Nama Peserta Didik:</span>
+                    <span id="res-nama" class="font-extrabold text-amber-900 text-base">-</span>
+                </div>
+                <div class="flex justify-between border-b pb-2 border-amber-200">
+                    <span class="text-slate-600 font-bold text-sm">Kelompok / Kelas:</span>
+                    <span id="res-kelas" class="font-extrabold text-amber-900 text-base">-</span>
+                </div>
+                <div class="flex justify-between border-b pb-2 border-amber-200">
+                    <span class="text-slate-600 font-bold text-sm">Guru / Pendamping:</span>
+                    <span id="res-guru" class="font-extrabold text-amber-900 text-base">-</span>
+                </div>
+                <div class="flex justify-between border-b pb-2 border-amber-200">
+                    <span class="text-slate-600 font-bold text-sm">Total Skor Bintang:</span>
+                    <span class="font-extrabold text-amber-600 text-xl">⭐ <span id="res-skor">0</span></span>
+                </div>
+                <div class="flex justify-between border-b pb-2 border-amber-200">
+                    <span class="text-slate-600 font-bold text-sm">Aktivitas Selesai:</span>
+                    <span id="res-aktivitas" class="font-extrabold text-green-700 text-base">0 / 5</span>
+                </div>
+            </div>
+
+            <!-- Achievement Badge Message -->
+            <div id="res-badge" class="p-4 bg-green-100 border-2 border-green-400 rounded-2xl text-green-900 font-bold text-base sm:text-lg">
+                🌱 "Petualangan Selesai dengan Sangat Baik!"
+            </div>
+
+            <!-- Action buttons for sync & export -->
+            <div class="flex flex-wrap gap-3 justify-center">
+                <button onclick="syncDataToSpreadsheet()" class="btn-kid bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-6 py-3 rounded-2xl border-2 border-emerald-700 flex items-center gap-2">
+                    ☁️ Kirim Data ke Google Sheet
+                </button>
+                <button onclick="generateDocsReport()" class="btn-kid bg-blue-500 hover:bg-blue-600 text-white font-bold px-6 py-3 rounded-2xl border-2 border-blue-700 flex items-center gap-2">
+                    📄 Buat Laporan Google Docs
+                </button>
+            </div>
+
+            <div id="sync-status-msg" class="text-xs font-bold text-slate-500 min-h-[1.5rem]"></div>
+
+            <button onclick="goToPage('page-menu')" class="btn-kid bg-amber-500 hover:bg-amber-600 text-white font-bold px-8 py-3 rounded-2xl border-2 border-amber-700 inline-block">
+                🏠 Kembali ke Menu Utama
+            </button>
+        </section>
+
+        <!-- 11. DASHBOARD GURU -->
+        <section id="page-dashboard" class="page-container hidden w-full bg-white/95 backdrop-blur-md rounded-3xl p-6 border-4 border-slate-300 shadow-xl space-y-6">
+            <div class="flex items-center justify-between border-b-2 border-slate-200 pb-3">
+                <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                    <span>👨‍🏫</span> Dashboard & Data Pembelajaran Guru
+                </h2>
+                <button onclick="goToPage('page-menu')" class="btn-kid bg-slate-200 text-slate-700 px-3 py-1 rounded-xl text-xs font-bold">Tutup</button>
+            </div>
+
+            <!-- Google Apps Script URL Config -->
+            <div class="bg-amber-50 border-2 border-amber-300 p-4 rounded-2xl space-y-2">
+                <label class="block text-xs font-bold text-amber-900">Konfigurasi URL Google Apps Script Web App:</label>
+                <div class="flex gap-2">
+                    <input type="text" id="script-url-input" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 text-xs rounded-xl border border-amber-300 font-mono">
+                    <button onclick="saveScriptUrl()" class="btn-kid bg-amber-600 text-white text-xs font-bold px-4 py-2 rounded-xl">Simpan</button>
+                </div>
+                <p class="text-[10px] text-amber-800">*Tempelkan URL Web App yang didapat setelah melakukan Deployment Apps Script.</p>
+            </div>
+
+            <!-- Stats Summary Cards -->
+            <div class="grid grid-cols-3 gap-3 text-center">
+                <div class="p-3 bg-blue-50 border-2 border-blue-200 rounded-2xl">
+                    <div class="text-2xl font-bold text-blue-800" id="dash-total-students">0</div>
+                    <div class="text-[10px] text-blue-600 font-bold uppercase">Total Peserta</div>
+                </div>
+                <div class="p-3 bg-green-50 border-2 border-green-200 rounded-2xl">
+                    <div class="text-2xl font-bold text-green-800" id="dash-avg-score">0</div>
+                    <div class="text-[10px] text-green-600 font-bold uppercase">Rata-rata Skor</div>
+                </div>
+                <div class="p-3 bg-purple-50 border-2 border-purple-200 rounded-2xl">
+                    <div class="text-2xl font-bold text-purple-800" id="dash-completed-act">0/5</div>
+                    <div class="text-[10px] text-purple-600 font-bold uppercase">Aktivitas Selesai</div>
+                </div>
+            </div>
+
+            <!-- Local Logged Student Submissions Table -->
+            <div class="space-y-2">
+                <h3 class="font-bold text-slate-700 text-sm">Riwayat Aktivitas Lokal Perangkat Ini:</h3>
+                <div class="overflow-x-auto border-2 border-slate-200 rounded-2xl max-h-48 overflow-y-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                            <tr>
+                                <th class="p-2">Nama</th>
+                                <th class="p-2">Kelas</th>
+                                <th class="p-2">Skor</th>
+                                <th class="p-2">Aktivitas</th>
+                                <th class="p-2">Status Sync</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash-table-body" class="divide-y divide-slate-100">
+                            <!-- Injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center pt-2">
+                <button onclick="clearLocalStorageData()" class="text-xs text-red-500 underline hover:text-red-700 font-bold">Reset Data Lokal</button>
+                <button onclick="goToPage('page-menu')" class="btn-kid bg-slate-700 text-white px-5 py-2 rounded-xl text-xs font-bold">Kembali ke Menu</button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- UNIVERSAL INTERACTIVE POPUP MODAL -->
+    <div id="feedback-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 border-4 border-amber-400 max-w-sm w-full text-center space-y-4 shadow-2xl animate-grow">
+            <div id="modal-emoji" class="text-6xl animate-bounce">🎉</div>
+            <h3 id="modal-title" class="text-2xl font-bold text-slate-800">Hebat!</h3>
+            <p id="modal-msg" class="text-sm text-slate-600 font-semibold">Jawabanmu benar sekali!</p>
+            <button onclick="closeModal()" class="btn-kid w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-2xl border-2 border-amber-700 text-base">
+                Lanjutkan! ✨
+            </button>
+        </div>
+    </div>
+
+    <!-- FOOTER IDENTITAS -->
+    <footer class="bg-white/70 backdrop-blur-md border-t-2 border-green-200 py-3 px-4 text-center text-slate-600 text-xs">
+        <div class="max-w-5xl mx-auto space-y-1">
+            <p class="font-bold text-slate-800">
+                “Petualangan Seru Mengenal Tanaman” — Pengembang: <span class="text-green-700">Herizon, S.Pd., M.Pd</span> | <span class="text-amber-700">SMP Negeri 7 Senayang</span>
+            </p>
+            <p class="text-[11px] text-slate-500 italic">
+                Media pembelajaran ini dikembangkan untuk mendukung pembelajaran interaktif anak usia dini. Seluruh aset visual dapat menggunakan aset yang dibuat atau dibantu oleh AI.
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        /* ==========================================================================
+           CONFIGURATIONS & STATE MANAGEMENT
+           ========================================================================== */
+        
+        // KONFIGURASI URL GOOGLE APPS SCRIPT WEB APP (GURU DAPAT MENGEDIT DI SINI)
+        let GOOGLE_SCRIPT_URL = localStorage.getItem("GOOGLE_SCRIPT_URL") || "MASUKKAN_URL_GOOGLE_APPS_SCRIPT_DI_SINI";
+
+        // Global Learning State Object
+        const learningData = {
+            student: {
+                name: "",
+                className: "",
+                teacher: ""
+            },
+            session: {
+                id: "",
+                startTime: null,
+                endTime: null
+            },
+            score: 0,
+            completedActivities: [],
+            activityResults: {}
+        };
+
+        let isAudioEnabled = true;
+        let audioCtx = null;
+
+        /* ==========================================================================
+           AUDIO SYNTHESIZER (Web Audio API - No External Assets Needed)
+           ========================================================================== */
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (!isAudioEnabled) return;
+            try {
+                initAudio();
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(800, now + 0.08);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'correct') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                    osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.setValueAtTime(180, now + 0.15);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'win') {
+                    const freqs = [523.25, 659.25, 783.99, 1046.50];
+                    freqs.forEach((f, idx) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.connect(g);
+                        g.connect(audioCtx.destination);
+                        o.frequency.setValueAtTime(f, now + idx * 0.12);
+                        g.gain.setValueAtTime(0.25, now + idx * 0.12);
+                        g.gain.linearRampToValueAtTime(0.01, now + idx * 0.12 + 0.3);
+                        o.start(now + idx * 0.12);
+                        o.stop(now + idx * 0.12 + 0.3);
+                    });
+                }
+            } catch (e) {
+                console.log("Audio play error:", e);
+            }
+        }
+
+        function toggleAudio() {
+            isAudioEnabled = !isAudioEnabled;
+            const btn = document.getElementById("btn-audio-toggle");
+            btn.textContent = isAudioEnabled ? "🔊" : "🔇";
+            if (isAudioEnabled) playSound('click');
+        }
+
+        /* ==========================================================================
+           PAGE NAVIGATION ROUTING
+           ========================================================================== */
+        function goToPage(pageId) {
+            playSound('click');
+            
+            // Hide all pages
+            document.querySelectorAll(".page-container").forEach(p => p.classList.add("hidden"));
+            
+            // Show target page
+            const target = document.getElementById(pageId);
+            if (target) {
+                target.classList.remove("hidden");
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            // Top Bar visibility
+            const topBar = document.getElementById("top-bar");
+            if (pageId === 'page-welcome' || pageId === 'page-login') {
+                topBar.classList.add("hidden");
+            } else {
+                topBar.classList.remove("hidden");
+            }
+
+            // If entering games
+            if (pageId === 'page-game') {
+                initGameMission(currentMissionIndex);
+            }
+
+            // If entering dashboard
+            if (pageId === 'page-dashboard') {
+                updateTeacherDashboardUI();
+            }
+
+            // If entering results
+            if (pageId === 'page-result') {
+                renderResultSummary();
+            }
+        }
+
+        /* ==========================================================================
+           STUDENT LOGIN HANDLER
+           ========================================================================== */
+        function handleLogin(event) {
+            event.preventDefault();
+            const nama = document.getElementById("input-nama").value.trim();
+            const kelas = document.getElementById("input-kelas").value;
+            const guru = document.getElementById("input-guru").value.trim() || "Guru PAUD";
+
+            if (!nama || !kelas) {
+                showModal("📝 Mohon Isi Data", "Isi nama dan kelompok dulu ya!", "⚠️");
+                return;
+            }
+
+            learningData.student.name = nama;
+            learningData.student.className = kelas;
+            learningData.student.teacher = guru;
+            learningData.session.id = "SES-" + Date.now();
+            learningData.session.startTime = new Date().toISOString();
+
+            // Update UI elements
+            document.getElementById("bar-student-name").textContent = nama;
+            document.getElementById("bar-student-class").textContent = kelas;
+            document.getElementById("menu-student-greeting").textContent = nama;
+
+            // Save session to localStorage
+            saveProgressLocally();
+
+            playSound('win');
+            goToPage('page-menu');
+        }
+
+        /* ==========================================================================
+           SCORE SYSTEM & PROGRESS TRACKING
+           ========================================================================== */
+        function addScore(points, activityId) {
+            learningData.score += points;
+            document.getElementById("current-score").textContent = learningData.score;
+
+            if (activityId && !learningData.completedActivities.includes(activityId)) {
+                learningData.completedActivities.push(activityId);
+            }
+
+            saveProgressLocally();
+        }
+
+        function saveProgressLocally() {
+            try {
+                localStorage.setItem("studentProgress", JSON.stringify(learningData));
+                
+                // Add to overall history log
+                let history = JSON.parse(localStorage.getItem("studentHistory") || "[]");
+                const existingIdx = history.findIndex(h => h.session.id === learningData.session.id);
+                if (existingIdx >= 0) {
+                    history[existingIdx] = learningData;
+                } else {
+                    history.push(learningData);
+                }
+                localStorage.setItem("studentHistory", JSON.stringify(history));
+            } catch (e) {
+                console.error("Local storage save error:", e);
+            }
+        }
+
+        /* ==========================================================================
+           MATERI 1 & 2 INTERACTIVE LOGIC
+           ========================================================================== */
+        const plantInfoData = {
+            bunga: { title: "🌻 Bunga Mawar", desc: "Bunga memiliki warna-warni yang indah dan membuat lingkungan menjadi harum!", icon: "🌻" },
+            pohon: { title: "🌳 Pohon Rindang", desc: "Pohon tumbuh tinggi dan besar. Daunnya yang lebat membuat udara jadi sejuk!", icon: "🌳" },
+            kecambah: { title: "🌱 Kecambah Kecil", desc: "Ini adalah tanaman yang baru lahir dari biji kecil. Lucu ya!", icon: "🌱" },
+            sayur: { title: "🥕 Wortel Sayur", desc: "Wortel tumbuh di dalam tanah. Sangat bagus untuk kesehatan matamu!", icon: "🥕" },
+            buah: { title: "🍅 Tomat Buah", desc: "Tomat rasanya segar dan manis asam. Mengandung banyak vitamin!", icon: "🍅" },
+            padi: { title: "🌾 Tanaman Padi", desc: "Tanaman padi dirawat oleh Pak Tani untuk menghasilkan beras yang kita makan!", icon: "🌾" }
+        };
+
+        function showPlantInfo(key) {
+            playSound('click');
+            const data = plantInfoData[key];
+            if (data) {
+                document.getElementById("materi-1-icon").textContent = data.icon;
+                document.getElementById("materi-1-title").textContent = data.title;
+                document.getElementById("materi-1-desc").textContent = data.desc;
+                addScore(2, "materi-1");
+            }
+        }
+
+        const partModalData = {
+            bunga: { title: "🌸 Bunga", desc: "Bunga membuat tanaman terlihat cantik dan berwarna-warni! Bunga bisa berkembang menjadi buah." },
+            buah: { title: "🍎 Buah & Biji", desc: "Buah rasanya lezat! Di dalam buah ada Biji yang bisa ditanam lagi menjadi tanaman baru." },
+            daun: { title: "🍃 Daun", desc: "Daun berwarna hijau. Daun membantu memasak makanan untuk tanaman dengan sinar matahari." },
+            batang: { title: "🪵 Batang", desc: "Batang bertugas menopang tanaman agar berdiri tegak dan menyalurkan air ke seluruh daun." },
+            akar: { title: "🥕 Akar", desc: "Akar bersembunyi di dalam tanah. Akar menyerap air dan makanan dari tanah." }
+        };
+
+        function showPartModal(partKey) {
+            playSound('click');
+            const data = partModalData[partKey];
+            if (data) {
+                document.getElementById("part-title").innerHTML = `<span>🔍</span> ${data.title}`;
+                document.getElementById("part-desc").textContent = data.desc;
+                addScore(2, "materi-2");
+            }
+        }
+
+        /* ==========================================================================
+           MATERI 3: KEBUTUHAN TANAMAN
+           ========================================================================== */
+        function checkPlantNeed(item, isCorrect) {
+            if (isCorrect) {
+                playSound('correct');
+                document.getElementById("plant-need-status").textContent = "🌻";
+                document.getElementById("plant-need-label").textContent = "Tanaman Segar & Bahagia!";
+                showModal("🎉 Hore!", `Hebat sekali! Tanaman sangat membutuhkan ${item.toUpperCase()} untuk tumbuh!`, "✨");
+                addScore(5, "materi-3");
+            } else {
+                playSound('wrong');
+                showModal("🤔 Coba Lagi Ya", `Apakah tanaman membutuhkan ${item.toUpperCase()}? Coba cari yang lain ya!`, "🌱");
+            }
+        }
+
+        /* ==========================================================================
+           MATERI 4 & CARE INTERACTIVE LOGIC
+           ========================================================================== */
+        const typeDetails = {
+            bunga: "Contoh tanaman bunga: Mawar, Melati, Sepatu, dan Anggrek.",
+            buah: "Contoh tanaman buah: Apel, Mangga, Pisang, dan Jeruk.",
+            sayur: "Contoh tanaman sayur: Bayam, Wortel, Kangkung, dan Brokoli.",
+            pohon: "Contoh pohon: Pohon Kelapa, Pohon Beringin, dan Pohon Mangga."
+        };
+
+        function showTypeDetail(type) {
+            playSound('click');
+            const box = document.getElementById("type-detail-box");
+            box.innerHTML = `<p class="text-base font-bold text-amber-900">${typeDetails[type]}</p>`;
+            addScore(2, "materi-4");
+        }
+
+        function applyCareTool(tool) {
+            const visual = document.getElementById("care-plant-visual");
+            const status = document.getElementById("care-plant-status");
+
+            if (tool === 'water' || tool === 'sun' || tool === 'soil') {
+                playSound('correct');
+                visual.textContent = "🪴🌸";
+                visual.classList.add("animate-grow");
+                status.textContent = "Wah, tanamanmu tumbuh makin indah dan segar!";
+                showModal("🎉 Tanaman Bahagia!", "Kamu sudah merawat tanaman dengan penuh kasih sayang!", "💧");
+                addScore(5, "materi-5");
+            } else {
+                playSound('wrong');
+                visual.textContent = "🥀";
+                status.textContent = "Tanaman tidak membutuhkan boneka...";
+                showModal("🤔 Belum Tepat", "Tanaman butuh air, tanah, dan cahaya matahari ya!", "🌱");
+            }
+        }
+
+        /* ==========================================================================
+           EDUCATIVE MINI GAMES SYSTEM (5 MISSIONS)
+           ========================================================================== */
+        let currentMissionIndex = 0;
+
+        const missions = [
+            {
+                id: 1,
+                title: "Misi 1 dari 5: Cari Bagian DAUN!",
+                reward: 10,
+                render: () => `
+                    <div class="text-center space-y-4">
+                        <p class="font-bold text-slate-700">Tekan gambar bagian tanaman yang bernama <u>DAUN</u>!</p>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button onclick="answerGameMission(false)" class="btn-kid p-4 bg-white border-2 border-slate-200 rounded-2xl text-4xl">🌸<br><span class="text-xs font-bold text-slate-600">Bunga</span></button>
+                            <button onclick="answerGameMission(true)" class="btn-kid p-4 bg-white border-2 border-slate-200 rounded-2xl text-4xl">🍃<br><span class="text-xs font-bold text-slate-600">Daun</span></button>
+                            <button onclick="answerGameMission(false)" class="btn-kid p-4 bg-white border-2 border-slate-200 rounded-2xl text-4xl">🍎<br><span class="text-xs font-bold text-slate-600">Buah</span></button>
+                            <button onclick="answerGameMission(false)" class="btn-kid p-4 bg-white border-2 border-slate-200 rounded-2xl text-4xl">🥕<br><span class="text-xs font-bold text-slate-600">Akar</span></button>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                id: 2,
+                title: "Misi 2 dari 5: Pasangkan Gambar dengan Kata!",
+                reward: 10,
+                render: () => `
+                    <div class="text-center space-y-4">
+                        <p class="font-bold text-slate-700">Pilih Pasangan yang Tepat untuk Gambar Buah 🍎!</p>
+                        <div class="flex justify-center gap-3">
+                            <button onclick="answerGameMission(false)" class="btn-kid px-4 py-3 bg-white border-2 border-purple-300 rounded-2xl font-bold text-purple-900">AKAR</button>
+                            <button onclick="answerGameMission(true)" class="btn-kid px-4 py-3 bg-white border-2 border-purple-300 rounded-2xl font-bold text-purple-900">BUAH</button>
+                            <button onclick="answerGameMission(false)" class="btn-kid px-4 py-3 bg-white border-2 border-purple-300 rounded-2xl font-bold text-purple-900">BATANG</button>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                id: 3,
+                title: "Misi 3 dari 5: Urutan Pertumbuhan Tanaman",
+                reward: 10,
+                render: () => `
+                    <div class="text-center space-y-4">
+                        <p class="font-bold text-slate-700">Tahap Pertama Pertumbuhan Tanaman dimulainya dari apa?</p>
+                        <div class="grid grid-cols-3 gap-3">
+                            <button onclick="answerGameMission(true)" class="btn-kid p-3 bg-white border-2 border-emerald-300 rounded-2xl text-center">
+                                <div class="text-3xl">🌰</div>
+                                <div class="text-xs font-bold text-emerald-900">Biji Kecil</div>
+                            </button>
+                            <button onclick="answerGameMission(false)" class="btn-kid p-3 bg-white border-2 border-emerald-300 rounded-2xl text-center">
+                                <div class="text-3xl">🌻</div>
+                                <div class="text-xs font-bold text-emerald-900">Bunga Mekar</div>
+                            </button>
+                            <button onclick="answerGameMission(false)" class="btn-kid p-3 bg-white border-2 border-emerald-300 rounded-2xl text-center">
+                                <div class="text-3xl">🍎</div>
+                                <div class="text-xs font-bold text-emerald-900">Buah Matang</div>
+                            </button>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                id: 4,
+                title: "Misi 4 dari 5: Cari Minuman Tanaman!",
+                reward: 10,
+                render: () => `
+                    <div class="text-center space-y-4">
+                        <p class="font-bold text-slate-700">Tanaman sangat haus, berikan minuman utama tanaman!</p>
+                        <div class="flex justify-center gap-4">
+                            <button onclick="answerGameMission(false)" class="btn-kid p-4 bg-white border-2 border-amber-300 rounded-2xl text-4xl">🧃<br><span class="text-xs font-bold">Jus</span></button>
+                            <button onclick="answerGameMission(true)" class="btn-kid p-4 bg-white border-2 border-blue-300 rounded-2xl text-4xl">💧<br><span class="text-xs font-bold">Air</span></button>
+                            <button onclick="answerGameMission(false)" class="btn-kid p-4 bg-white border-2 border-amber-300 rounded-2xl text-4xl">🧋<br><span class="text-xs font-bold">Susu</span></button>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                id: 5,
+                title: "Misi 5 dari 5: Tempat Akar Bersembunyi",
+                reward: 10,
+                render: () => `
+                    <div class="text-center space-y-4">
+                        <p class="font-bold text-slate-700">Di manakah bagian Akar tanaman bersembunyi?</p>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button onclick="answerGameMission(true)" class="btn-kid p-4 bg-white border-2 border-amber-400 rounded-2xl text-center">
+                                <div class="text-4xl">🪴</div>
+                                <div class="text-xs font-bold text-amber-900">Di Dalam Tanah</div>
+                            </button>
+                            <button onclick="answerGameMission(false)" class="btn-kid p-4 bg-white border-2 border-sky-400 rounded-2xl text-center">
+                                <div class="text-4xl">☁️</div>
+                                <div class="text-xs font-bold text-sky-900">Di Atas Awan</div>
+                            </button>
+                        </div>
+                    </div>
+                `
+            }
+        ];
+
+        function initGameMission(index) {
+            if (index >= missions.length) {
+                showModal("🏆 SELAMAT!", "Kamu berhasil menyelesaikan seluruh Misi Permainan!", "⭐");
+                goToPage('page-result');
+                return;
+            }
+
+            const current = missions[index];
+            document.getElementById("game-mission-title").textContent = current.title;
+            document.getElementById("game-score-reward").textContent = current.reward;
+            document.getElementById("game-stage-container").innerHTML = current.render();
+        }
+
+        function answerGameMission(isCorrect) {
+            if (isCorrect) {
+                playSound('correct');
+                const reward = missions[currentMissionIndex].reward;
+                addScore(reward, "game-mission-" + currentMissionIndex);
+                showModal("🎉 Luar Biasa!", `Jawabanmu Tepat! Poin bertambah +${reward}⭐`, "🌟");
+            } else {
+                playSound('wrong');
+                showModal("💪 Yuk Coba Lagi", "Belum tepat, tetapi kamu pasti bisa!", "🌱");
+            }
+        }
+
+        function nextGameMission() {
+            currentMissionIndex++;
+            if (currentMissionIndex < missions.length) {
+                initGameMission(currentMissionIndex);
+            } else {
+                triggerConfetti();
+                goToPage('page-result');
+            }
+        }
+
+        /* ==========================================================================
+           RESULT SUMMARY & SPREADSHEET API INTEGRATION
+           ========================================================================== */
+        function renderResultSummary() {
+            document.getElementById("res-nama").textContent = learningData.student.name || "Peserta Didik";
+            document.getElementById("res-kelas").textContent = learningData.student.className || "-";
+            document.getElementById("res-guru").textContent = learningData.student.teacher || "-";
+            document.getElementById("res-skor").textContent = learningData.score;
+            document.getElementById("res-aktivitas").textContent = `${learningData.completedActivities.length} Selesai`;
+
+            const badge = document.getElementById("res-badge");
+            if (learningData.score >= 40) {
+                badge.textContent = "🌻 Petualangan Selesai dengan Sangat Baik!";
+                triggerConfetti();
+            } else if (learningData.score >= 20) {
+                badge.textContent = "🌿 Petualangan Hampir Selesai!";
+            } else {
+                badge.textContent = "🌱 Semangat Terus Belajarnya Ya!";
+            }
+        }
+
+        async function syncDataToSpreadsheet() {
+            const statusMsg = document.getElementById("sync-status-msg");
+            statusMsg.textContent = "⌛ Sedang mengirim data ke Google Sheet...";
+            statusMsg.className = "text-xs font-bold text-blue-600";
+
+            if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("MASUKKAN_URL")) {
+                statusMsg.textContent = "⚠️ URL Apps Script belum dikonfigurasi di Dashboard Guru.";
+                statusMsg.className = "text-xs font-bold text-amber-600";
+                return;
+            }
+
+            const payload = {
+                sessionId: learningData.session.id,
+                nama: learningData.student.name,
+                kelas: learningData.student.className,
+                guru: learningData.student.teacher,
+                tanggal: new Date().toLocaleString("id-ID"),
+                skor: learningData.score,
+                aktivitasSelesai: learningData.completedActivities.length,
+                durasi: "Selesai"
+            };
+
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                statusMsg.textContent = "✅ Data berhasil dikirim ke Google Sheet!";
+                statusMsg.className = "text-xs font-bold text-emerald-600";
+                playSound('win');
+            } catch (err) {
+                console.error("Sync error:", err);
+                statusMsg.textContent = "❌ Gagal mengirim. Data tersimpan aman di penyimpanan lokal.";
+                statusMsg.className = "text-xs font-bold text-red-600";
+            }
+        }
+
+        function generateDocsReport() {
+            playSound('click');
+            const statusMsg = document.getElementById("sync-status-msg");
+            statusMsg.textContent = "📄 Menyiapkan permintaan laporan Google Docs...";
+            
+            // Trigger API request or redirect prompt
+            setTimeout(() => {
+                syncDataToSpreadsheet();
+                alert(`Laporan Pembelajaran untuk ${learningData.student.name} siap diproses via Google Apps Script!`);
+            }, 500);
+        }
+
+        /* ==========================================================================
+           TEACHER DASHBOARD HELPERS
+           ========================================================================== */
+        function saveScriptUrl() {
+            const url = document.getElementById("script-url-input").value.trim();
+            if (url) {
+                GOOGLE_SCRIPT_URL = url;
+                localStorage.setItem("GOOGLE_SCRIPT_URL", url);
+                alert("URL Google Apps Script berhasil disimpan!");
+            }
+        }
+
+        function updateTeacherDashboardUI() {
+            document.getElementById("script-url-input").value = GOOGLE_SCRIPT_URL;
+
+            const history = JSON.parse(localStorage.getItem("studentHistory") || "[]");
+            document.getElementById("dash-total-students").textContent = history.length;
+
+            if (history.length > 0) {
+                const avg = Math.round(history.reduce((acc, curr) => acc + (curr.score || 0), 0) / history.length);
+                document.getElementById("dash-avg-score").textContent = avg;
+            }
+
+            const tbody = document.getElementById("dash-table-body");
+            tbody.innerHTML = "";
+
+            if (history.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Belum ada data aktivitas siswa.</td></tr>`;
+                return;
+            }
+
+            history.forEach(item => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td class="p-2 font-bold">${item.student.name || "-"}</td>
+                    <td class="p-2">${item.student.className || "-"}</td>
+                    <td class="p-2 text-amber-600 font-bold">⭐ ${item.score || 0}</td>
+                    <td class="p-2">${(item.completedActivities || []).length}/5</td>
+                    <td class="p-2"><span class="bg-green-100 text-green-800 text-[10px] px-2 py-0.5 rounded-full font-bold">Tersimpan</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function clearLocalStorageData() {
+            if (confirm("Apakah Anda yakin ingin menghapus seluruh riwayat data lokal?")) {
+                localStorage.removeItem("studentHistory");
+                localStorage.removeItem("studentProgress");
+                updateTeacherDashboardUI();
+            }
+        }
+
+        /* ==========================================================================
+           UNIVERSAL MODAL & CONFETTI CELEBRATION
+           ========================================================================== */
+        function showModal(title, msg, emoji = "🎉") {
+            document.getElementById("modal-title").textContent = title;
+            document.getElementById("modal-msg").textContent = msg;
+            document.getElementById("modal-emoji").textContent = emoji;
+            document.getElementById("feedback-modal").classList.remove("hidden");
+        }
+
+        function closeModal() {
+            playSound('click');
+            document.getElementById("feedback-modal").classList.add("hidden");
+        }
+
+        function triggerConfetti() {
+            const canvas = document.getElementById("confettiCanvas");
+            const ctx = canvas.getContext("2d");
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const particles = Array.from({ length: 60 }).map(() => ({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height - canvas.height,
+                size: Math.random() * 8 + 4,
+                color: ['#f43f5e', '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6'][Math.floor(Math.random() * 5)],
+                speedY: Math.random() * 3 + 2,
+                speedX: Math.random() * 2 - 1
+            }));
+
+            function render() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.y += p.speedY;
+                    p.x += p.speedX;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                if (particles.some(p => p.y < canvas.height)) {
+                    requestAnimationFrame(render);
+                } else {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+
+            render();
+        }
+
+        // Online Sync Event Handler
+        window.addEventListener("online", () => {
+            console.log("Koneksi pulih. Menyiapkan sinkronisasi...");
+            syncDataToSpreadsheet();
+        });
+
+        // Initialize App on window load
+        window.onload = function() {
+            console.log("MPI Petualangan Seru Mengenal Tanaman siap digunakan.");
+        };
+    </script>
+</body>
+</html>
